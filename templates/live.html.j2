@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>All Receipts</title>
+    <style>
+        body {
+            margin: auto;
+            width: 50%;
+            padding: 10px;
+            scroll-behavior: smooth; /* Enable smooth scrolling */
+        }
+
+        /* Container to stack receipts vertically */
+        #receipts-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .esc-receipt {
+            border: 1px solid #888;
+            font-family: monospace;
+            padding: 1em;
+            width: 80mm; /* 80mm is the width of a paper receipt. Other sizes include 52mm */
+            transform: scale(1.25);
+            transform-origin: top left;
+            display: block; /* ensures stacking */
+            margin-bottom: 2em;
+        }
+
+        .esc-line {
+            white-space: pre;
+        }
+
+        .esc-emphasis {
+            font-weight: bold;
+        }
+
+        .esc-justify-center .esc-text-scaled {
+            transform-origin: 50% 0;
+        }
+
+        .esc-justify-right .esc-text-scaled {
+            transform-origin: 100% 0;
+        }
+
+        .esc-justify-center {
+            text-align: center;
+        }
+
+        .esc-justify-right {
+            text-align: right;
+        }
+
+        .esc-text-scaled {
+            display: inline-block;
+            transform-origin: 0 0;
+        }
+
+        .esc-justify-center .esc-bitimage {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .esc-justify-right .esc-bitimage {
+            margin-left: auto;
+        }
+
+        .esc-underline {
+            border-bottom: 2px solid #000;
+        }
+
+        .esc-underline-double {
+            border-bottom: 2px solid #000;
+        }
+
+        .esc-invert {
+            background: #000;
+            color: #fff;
+        }
+
+        .esc-upside-down {
+            transform: rotate(180deg);
+        }
+
+        .esc-font-b {
+            font-size: 75%
+        }
+
+        span {
+            display: inline-block;
+        }
+
+        /* Scaling classes */
+        .esc-width-2 { transform: scale(2, 1); }
+        .esc-width-3 { transform: scale(3, 1); }
+        .esc-width-4 { transform: scale(4, 1); }
+        .esc-width-5 { transform: scale(5, 1); }
+        .esc-width-6 { transform: scale(6, 1); }
+        .esc-width-7 { transform: scale(7, 1); }
+        .esc-width-8 { transform: scale(8, 1); }
+        .esc-height-2 { transform: scale(1, 2); margin-bottom: 1em; }
+        .esc-height-3 { transform: scale(1, 3); margin-bottom: 2em; }
+        .esc-height-4 { transform: scale(1, 4); margin-bottom: 3em; }
+        .esc-height-5 { transform: scale(1, 5); margin-bottom: 4em; }
+        .esc-height-6 { transform: scale(1, 6); margin-bottom: 5em; }
+        .esc-height-7 { transform: scale(1, 7); margin-bottom: 6em; }
+        .esc-height-8 { transform: scale(1, 8); margin-bottom: 7em; }
+
+        /* Transparent scroll zones */
+        .scroll-zone {
+            position: fixed;
+            width: 100%;
+            z-index: 1000; /* Ensure zones are above content */
+            background-color: rgba(0, 0, 0, 0); /* Fully transparent */
+        }
+
+        #scroll-zone-top {
+            top: 0;
+            height: 33vh; /* 33% of viewport height */
+        }
+
+        #scroll-zone-bottom {
+            bottom: 0;
+            height: 33vh;
+        }
+    </style>
+</head>
+<body>
+<!-- Transparent zones for scrolling -->
+<div id="scroll-zone-top" class="scroll-zone"></div>
+<div id="scroll-zone-bottom" class="scroll-zone"></div>
+
+<div id="receipts-container"></div>
+
+<script>
+    // URL of the receipts list page.
+    // Adjust this URL as needed. Ensure your receipts service allows CORS.
+    const RECEIPT_SERVICE_URL = 'http://localhost/recus';
+
+    // Function to fetch and parse receipts
+    async function fetchReceipts() {
+        try {
+            const listResponse = await fetch(RECEIPT_SERVICE_URL);
+            const listHTML = await listResponse.text();
+            const parser = new DOMParser();
+            const listDoc = parser.parseFromString(listHTML, 'text/html');
+
+            // Extract all receipt links from the element with id "receiptlist"
+            const linkElements = listDoc.querySelectorAll('#receiptlist li a');
+            const links = Array.from(linkElements).map(a => a.getAttribute('href'));
+
+            const receipts = [];
+            for (const link of links) {
+                try {
+                    const receiptUrl = 'http://localhost' + link;
+                    const receiptResponse = await fetch(receiptUrl);
+                    const receiptHTML = await receiptResponse.text();
+                    const receiptDoc = parser.parseFromString(receiptHTML, 'text/html');
+
+                    const receiptDiv = receiptDoc.querySelector('div.esc-receipt');
+                    if (receiptDiv) {
+                        receipts.push(`<div class="esc-receipt">${receiptDiv.innerHTML}</div>`);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching receipt at ${link}:`, error);
+                }
+            }
+            return receipts;
+        } catch (error) {
+            console.error('Error fetching receipts list:', error);
+            return [];
+        }
+    }
+
+    let currentCount = 0;
+    async function updateReceipts() {
+        const receipts = await fetchReceipts();
+        if (receipts.length !== currentCount) {
+            currentCount = receipts.length;
+            document.getElementById('receipts-container').innerHTML = receipts.join("\n");
+        }
+    }
+
+    updateReceipts();
+    setInterval(updateReceipts, 1000);
+
+    // Scroll functionality
+    let scrollStep = window.innerHeight * 0.2; // 20% of viewport height
+    window.addEventListener('resize', () => {
+        scrollStep = window.innerHeight * 0.2;
+    });
+
+    const topZone = document.getElementById('scroll-zone-top');
+    const bottomZone = document.getElementById('scroll-zone-bottom');
+
+    function scrollUp() {
+        window.scrollBy({ top: -scrollStep, behavior: 'smooth' });
+    }
+    function scrollDown() {
+        window.scrollBy({ top: scrollStep, behavior: 'smooth' });
+    }
+
+    // --- Top zone event handling ---
+    // Desktop: single click scrolls up; double click scrolls to top.
+    topZone.addEventListener('click', (e) => {
+        e.preventDefault();
+        scrollUp();
+    });
+
+    topZone.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Touch devices: always scroll up on touchend.
+    // Additionally, if two touches occur within the tap delay, also scroll to the top.
+    let lastTouchTime = 0;
+    const tapDelay = 300; // milliseconds
+    topZone.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        scrollUp();
+        const currentTouchTime = new Date().getTime();
+        if (currentTouchTime - lastTouchTime <= tapDelay) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        lastTouchTime = currentTouchTime;
+    });
+
+    // Bottom zone: single tap (or click) scrolls down.
+    bottomZone.addEventListener('click', (e) => {
+        e.preventDefault();
+        scrollDown();
+    });
+    bottomZone.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        scrollDown();
+    });
+</script>
+</body>
+</html>

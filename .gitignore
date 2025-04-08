@@ -1,0 +1,28 @@
+# OSX
+.DS_Store
+
+# Eclipse files
+.settings/*
+.project
+.buildpath
+
+# doxygen files
+doc/html
+doc/latex
+doc/doxygen_sqlite3.db
+
+# composer files
+vendor/
+
+# other build files
+build/*
+/__pycache__/**
+*.phar
+composer.lock
+cups/*.tar.gz
+
+# Test and runtime-generated files
+web/receipts/*.html
+web/tmp/reception.bin
+web/receipt_list.csv
+web/tmp/*_log
