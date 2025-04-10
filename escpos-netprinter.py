@@ -12,7 +12,9 @@ from zoneinfo import ZoneInfo
 
 import threading
 import socketserver
+import socket
 
+host_ip = getenv("HOST_IP", "127.0.0.1")
 
 #Network ESC/pos printer server
 class ESCPOSServer(socketserver.TCPServer):
@@ -31,6 +33,7 @@ class ESCPOSHandler(socketserver.StreamRequestHandler):
     """
     timeout = 10  #On abandonne une réception après 10 secondes - un compromis pour assurer que tout passe sans se bourrer de connections zombies.
     netprinter_debugmode = "false"
+
 
     # Receive the print data and dump it in a file.
     def handle(self):
@@ -238,6 +241,7 @@ def accueil():
 @app.route("/live")
 def live():
     return render_template('live.html.j2',
+                           local_ip=host_ip,
                            host=request.host.split(':')[0],
                            jetDirectPort=getenv('PRINTER_PORT', '9100'),
                            debug=getenv('FLASK_RUN_DEBUG', "false"))

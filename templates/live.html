@@ -5,17 +5,16 @@
     <title>All Receipts</title>
     <style>
         body {
-            margin: auto;
-            width: 50%;
-            padding: 10px;
             scroll-behavior: smooth; /* Enable smooth scrolling */
+            zoom: 1.5; /* Scale the entire body */
+            margin-left: -60px; /* Adjust for the zoom effect */
         }
 
         /* Container to stack receipts vertically */
         #receipts-container {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
+            align-items: center;
         }
 
         .esc-receipt {
@@ -118,11 +117,13 @@
 
         #scroll-zone-top {
             top: 0;
+            left: 0;
             height: 33vh; /* 33% of viewport height */
         }
 
         #scroll-zone-bottom {
             bottom: 0;
+            left: 0;
             height: 33vh;
         }
     </style>
